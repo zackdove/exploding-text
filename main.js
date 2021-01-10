@@ -8,6 +8,7 @@ var animCenter;
 var mouseX;
 var mouseY;
 var minDist;
+var multiplier = 2;
 document.fonts.load('3.8rem "Maison Neue"');
 
 // Helper Functions
@@ -100,9 +101,18 @@ function moveParts() {
 	var imgData = ctx.createImageData(width, height);
 	for (var i = 0; i < allParts.length; i++) {
 		var curPart = allParts[i];
-		var multiplier = 2;
 		// Change multiplier to move more
-		var curDist = getDist(curPart.center[0],curPart.center[1],mouseX,mouseY) * curPart.m * (1/multiplier);
+		var t_multiplier;
+		if (multiplier > 2.9){
+			multiplier = 2.3;
+		}
+		if (multiplier > 2.6){
+			t_multiplier = 2.9 - multiplier + 2.3;
+		} else {
+			t_multiplier = multiplier;
+		}
+		multiplier=multiplier+0.0000001;
+		var curDist = getDist(curPart.center[0],curPart.center[1],mouseX,mouseY) * curPart.m * (1/t_multiplier);
 		if (curDist <= minDist) {
 			var distMult = 1 - (curDist/minDist);
 			var xDelta = Math.floor(curPart.dx*distMult);
@@ -261,6 +271,7 @@ function getParts(){
 		allParts.push(part);
 	}
 	document.addEventListener("mousemove", handleMove);
+	setInterval(moveParts, 10);
 }
 
 function initText() {
