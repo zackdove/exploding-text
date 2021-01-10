@@ -11,12 +11,14 @@ var minDist;
 var multiplier = 2;
 document.fonts.load('3.8rem "Maison Neue"');
 
-// Helper Functions
+// ------ Helper Functions -------
 
+// minDist is the distance needed to shift the points
 function setMinDist(){
 	minDist = Math.min(width, height) * 0.1;
 }
 
+// Get coordiate from index
 function getCoord(i) {
 	i = i/4;
 	var x = i%width;
@@ -24,6 +26,7 @@ function getCoord(i) {
 	return [x,y];
 }
 
+// Get index from coordinate
 function getInd(x,y) {
 	return (((y*width)+x)*4);
 }
@@ -49,6 +52,7 @@ function wrapText(context, text, x, y, maxWidth, lineHeight) {
 	context.fillText(line, x, y);
 }
 
+// Takes the raw image data, decrease alpha channel
 function fadeImage(imgData){
 	for (let i = 0; i < imgData.data.length; i += 4) {
 		// imgData.data[i + 3] = imgData;      // A value
@@ -62,6 +66,7 @@ function fadeImage(imgData){
 	return imgData;
 }
 
+// Draw black text instead of white
 function drawInverseText(){
 	ctx.fillStyle = "black";
 	ctx.font="140px Maison Neue";
@@ -95,6 +100,10 @@ function setCanvasDims() {
 	setMinDist();
 }
 
+window.onresize = function() {
+	setCanvasDims();
+}
+
 // Get canvas coords of mouse
 // e is event from mousemouse eventlistener
 function getMouseCoords(e){
@@ -102,9 +111,7 @@ function getMouseCoords(e){
 	mouseY = e.clientY * dpi * 1.2;
 }
 
-window.onresize = function() {
-	setCanvasDims();
-}
+
 
 // Returns true if device has pointer/mouse (i.e. no touch)
 function hasPointer(){
@@ -112,7 +119,7 @@ function hasPointer(){
 	return query.matches;
 }
 
-// Animation
+// ------- Animation -------
 
 // Might need to use a callback to force moveParts after getMouseCoords
 function handleMove(e){
@@ -122,7 +129,7 @@ function handleMove(e){
 
 // Move the individual parts of the text
 function moveParts() {
-	var persistOldData = true;
+	var persistOldData = false;
 	var imgData
 	if (persistOldData){
 		imgData = fadeImage(ctx.getImageData(0,0,width,height));
@@ -131,6 +138,7 @@ function moveParts() {
 	}
 	for (var i = 0; i < allParts.length; i++) {
 		var curPart = allParts[i];
+		// This section controls moving the parts over time, comment out for stationary
 		// Change multiplier to move more
 		// var t_multiplier;
 		// if (multiplier > 2.9){
@@ -309,7 +317,7 @@ function getParts(){
 		allParts.push(part);
 	}
 	document.addEventListener("mousemove", handleMove);
-	setInterval(moveParts, 200);
+	setInterval(moveParts, 10);
 }
 
 // Draw the text to the screen
@@ -327,7 +335,6 @@ function initText() {
 
 function init() {
 	// isMobile = checkMobile();
-	
 	if (hasPointer()) {
 		initCanvas();
 		initText();
