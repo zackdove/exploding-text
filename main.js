@@ -28,6 +28,7 @@ function getInd(x,y) {
 	return (((y*width)+x)*4);
 }
 
+// Taken from Saul's scratcher - cheers!
 function wrapText(context, text, x, y, maxWidth, lineHeight) {
 	var words = text.split(' ');
 	var line = '';
@@ -46,6 +47,29 @@ function wrapText(context, text, x, y, maxWidth, lineHeight) {
 		}
 	}
 	context.fillText(line, x, y);
+}
+
+function fadeImage(imgData){
+	for (let i = 0; i < imgData.data.length; i += 4) {
+		// imgData.data[i + 3] = imgData;      // A value
+		
+		if (imgData.data[i+3] > 0){
+			// Amount must be factor of 255 (3, 5, 17)
+			let amount = 5;
+			imgData.data[i+3] = imgData.data[i+3] - amount;
+		}
+	}
+	return imgData;
+}
+
+function drawInverseText(){
+	ctx.fillStyle = "black";
+	ctx.font="140px Maison Neue";
+	ctx.textAlign = "center";
+	var text = "Digital projects that cut through the noise";
+	var x = (width + 15) / 2;
+	var y = (height - 24) / 2;	
+	wrapText(ctx, text, x, y, width*0.5, 140);
 }
 
 // Calculate euclidian distance between two points
@@ -98,26 +122,33 @@ function handleMove(e){
 
 // Move the individual parts of the text
 function moveParts() {
-	var imgData = ctx.createImageData(width, height);
+	var persistOldData = true;
+	var imgData
+	if (persistOldData){
+		imgData = fadeImage(ctx.getImageData(0,0,width,height));
+	} else {
+		imgData = ctx.createImageData(width, height);
+	}
 	for (var i = 0; i < allParts.length; i++) {
 		var curPart = allParts[i];
 		// Change multiplier to move more
-		var t_multiplier;
-		if (multiplier > 2.9){
-			multiplier = 2.3;
-		}
-		if (multiplier > 2.6){
-			t_multiplier = 2.9 - multiplier + 2.3;
-		} else {
-			t_multiplier = multiplier;
-		}
-		multiplier=multiplier+0.0000001;
-		var curDist = getDist(curPart.center[0],curPart.center[1],mouseX,mouseY) * curPart.m * (1/t_multiplier);
+		// var t_multiplier;
+		// if (multiplier > 2.9){
+		// 	multiplier = 2.3;
+		// }
+		// if (multiplier > 2.6){
+		// 	t_multiplier = 2.9 - multiplier + 2.3;
+		// } else {
+		// 	t_multiplier = multiplier;
+		// }
+		// multiplier=multiplier+0.0000001;
+		var curDist = getDist(curPart.center[0],curPart.center[1],mouseX,mouseY) * curPart.m * (1/multiplier);
+		// If within minDist, move them away
 		if (curDist <= minDist) {
 			var distMult = 1 - (curDist/minDist);
 			var xDelta = Math.floor(curPart.dx*distMult);
 			var yDelta = Math.floor(curPart.dy*distMult);
-			
+			// Draw new location in white
 			for (var j = 0; j < curPart.points.length; j++) {
 				var curPoint = curPart.points[j];
 				var newX = curPoint[0] + xDelta;
@@ -131,9 +162,16 @@ function moveParts() {
 					imgData.data[ind+2] = 255;
 					imgData.data[ind+3] = 255;
 				}
+				// Draw the old location in black
+				var ind = getInd(curPoint[0], curPoint[1]);
+				imgData.data[ind]   = 0;
+				imgData.data[ind+1] = 0;
+				imgData.data[ind+2] = 0;
+				imgData.data[ind+3] = 255;
 			}
 			allParts[i].updated = false;
 		}
+		// Else move them back
 		else {
 			for (var j = 0; j < curPart.points.length; j++) {
 				var curPoint = curPart.points[j];
@@ -271,9 +309,10 @@ function getParts(){
 		allParts.push(part);
 	}
 	document.addEventListener("mousemove", handleMove);
-	setInterval(moveParts, 10);
+	setInterval(moveParts, 200);
 }
 
+// Draw the text to the screen
 function initText() {
 	ctx.clearRect(0,0,width,height);
 	ctx.fillStyle = "white";
