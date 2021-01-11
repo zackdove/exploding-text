@@ -100,8 +100,20 @@ function setCanvasDims() {
 	setMinDist();
 }
 
+// Resize
+function resize(){
+	initCanvas();
+	initText();
+	getParts();
+}
+
+// Delay for resizing, stops overloading the browser
+var timeout;
 window.onresize = function() {
-	setCanvasDims();
+	if (timeout) {
+		clearTimeout(timeout);
+	}
+	timeout = setTimeout(resize, 500);
 }
 
 // Get canvas coords of mouse
@@ -217,6 +229,7 @@ function moveParts() {
 function initCanvas() {
 	canvas = document.getElementById("canvas");
 	ctx  = canvas.getContext("2d");
+	allParts = [];
 	setCanvasDims();
 }
 
