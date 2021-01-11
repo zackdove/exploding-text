@@ -197,11 +197,14 @@ function moveParts() {
 					imgData.data[ind+3] = 255;
 				}
 				// Draw the old location in black
-				var ind = getInd(curPoint[0], curPoint[1]);
-				imgData.data[ind]   = 0;
-				imgData.data[ind+1] = 0;
-				imgData.data[ind+2] = 0;
-				imgData.data[ind+3] = 255;
+				var drawOldLocation = false;
+				if (drawOldLocation){
+					var ind = getInd(curPoint[0], curPoint[1]);
+					imgData.data[ind]   = 0;
+					imgData.data[ind+1] = 0;
+					imgData.data[ind+2] = 0;
+					imgData.data[ind+3] = 255;
+				}
 			}
 			allParts[i].updated = false;
 		}
