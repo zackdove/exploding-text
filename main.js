@@ -1,8 +1,8 @@
 var ctx;
 var canvas;
 let dpi = window.devicePixelRatio;
-var width = window.innerWidth;
-var height = window.innerHeight;
+var width = window.innerWidth * dpi * 1.2;
+var height = window.innerHeight * dpi * 1.2;
 var allParts = [];
 var animCenter;
 var mouseX;
@@ -15,20 +15,20 @@ document.fonts.load('3.8rem "Maison Neue"');
 
 // minDist is the distance needed to shift the points
 function setMinDist(){
-	minDist = Math.min(width, height) * 0.1;
+	minDist = Math.min(width, height) * 0.05;
 }
 
 // Get coordiate from index
 function getCoord(i) {
 	i = i/4;
-	var x = i%width;
-	var y = (i-x)/width;
+	var x = i%canvas.width;
+	var y = (i-x)/canvas.width;
 	return [x,y];
 }
 
 // Get index from coordinate
 function getInd(x,y) {
-	return (((y*width)+x)*4);
+	return (((y*canvas.width)+x)*4);
 }
 
 // Taken from Saul's scratcher - cheers!
@@ -50,13 +50,13 @@ function wrapText(context, text, x, y, maxWidth, lineHeight) {
 		}
 	}
 	context.fillText(line, x, y);
+	console.log("text drawn");
 }
 
 // Takes the raw image data, decrease alpha channel
 function fadeImage(imgData){
 	for (let i = 0; i < imgData.data.length; i += 4) {
 		// imgData.data[i + 3] = imgData;      // A value
-		
 		if (imgData.data[i+3] > 0){
 			// Amount must be factor of 255 (3, 5, 17)
 			let amount = 5;
@@ -64,6 +64,19 @@ function fadeImage(imgData){
 		}
 	}
 	return imgData;
+}
+
+// Check is at least one single pixel is drawn
+function checkDrawn(){
+	var imgData = ctx.getImageData(0,0,width,height);
+	for (let i = 0; i < imgData.data.length; i += 4) {
+		// imgData.data[i + 3] = A value
+		if (imgData.data[i+3] > 0){
+			return true; 
+		}
+	}
+	console.log("not drawn yet");
+	return false;
 }
 
 // Draw black text instead of white
@@ -89,11 +102,11 @@ function setCanvasDims() {
 	//get CSS height
 	//the + prefix casts it to an integer
 	//the slice method gets rid of "px"
-	let style_height = +getComputedStyle(canvas).getPropertyValue("height").slice(0, -2);
-	height = style_height * dpi * 1.2;
+	// height = style_height * dpi * 1.2;
+	height  = window.innerHeight * dpi * 1.2;
 	//get CSS width
-	let style_width = +getComputedStyle(canvas).getPropertyValue("width").slice(0, -2);
-	width = style_width * dpi * 1.2;
+	// width = style_width * dpi * 1.2;
+	width = window.innerWidth * dpi * 1.2;
 	//scale the canvas
 	canvas.setAttribute('height', height);
 	canvas.setAttribute('width', width);
@@ -102,6 +115,7 @@ function setCanvasDims() {
 
 // Resize
 function resize(){
+	console.log("resizing");
 	initCanvas();
 	initText();
 	getParts();
@@ -112,7 +126,7 @@ var timeout;
 window.onresize = function() {
 	if (timeout) {
 		clearTimeout(timeout);
-	}
+	} 
 	timeout = setTimeout(resize, 500);
 }
 
@@ -152,17 +166,17 @@ function moveParts() {
 		var curPart = allParts[i];
 		// This section controls moving the parts over time, comment out for stationary
 		// Change multiplier to move more
-		// var t_multiplier;
-		// if (multiplier > 2.9){
-		// 	multiplier = 2.3;
-		// }
-		// if (multiplier > 2.6){
-		// 	t_multiplier = 2.9 - multiplier + 2.3;
-		// } else {
-		// 	t_multiplier = multiplier;
-		// }
-		// multiplier=multiplier+0.0000001;
-		var curDist = getDist(curPart.center[0],curPart.center[1],mouseX,mouseY) * curPart.m * (1/multiplier);
+		var t_multiplier;
+		if (multiplier > 2.1){
+			multiplier = 1.5;
+		}
+		if (multiplier > 1.8){
+			t_multiplier = 2.1 - multiplier + 1.5;
+		} else {
+			t_multiplier = multiplier;
+		}
+		multiplier=multiplier+0.0000001;
+		var curDist = getDist(curPart.center[0],curPart.center[1],mouseX,mouseY) * curPart.m * (1/t_multiplier);
 		// If within minDist, move them away
 		if (curDist <= minDist) {
 			var distMult = 1 - (curDist/minDist);
@@ -231,6 +245,7 @@ function initCanvas() {
 	ctx  = canvas.getContext("2d");
 	allParts = [];
 	setCanvasDims();
+	console.log("canvas init done");
 }
 
 // Convert points to part which is made of points, center, a random offset in x and y, plus random speed m
@@ -260,77 +275,86 @@ function newPart(points) {
 
 // Split image into small, random parts
 function getParts(){
-	var imageData = ctx.getImageData(0,0,width,height);
-	var points = [];
-	// Convert raw data into points
-	for (var i = 0; i < imageData.data.length; i+=4) {
-		if (imageData.data[i+3] > 0) {
-			var c = imageData.data[i] + "," + imageData.data[i+1] + "," + imageData.data[i+2] + "," + imageData.data[i+3];
-			points.push(getCoord(i));
+	console.log("getting parts");
+	if (checkDrawn()){
+		allParts = [];
+		var imageData = ctx.getImageData(0,0,width,height);
+		var points = [];
+		// Convert raw data into points
+		console.log("data length " + imageData.data.length/4);
+		for (var i = 0; i < imageData.data.length; i+=4) {
+			if (imageData.data[i+3] > 0) {
+				points.push(getCoord(i));
+			}
 		}
-	}
-	let randomIndex = Math.round(Math.random() * (points.length-1));
-	animCenter = points[randomIndex];
-	var parts = 25;
-	var pointsPerPart = points.length/parts;
-	var coordDict = {};
-	// Split coords into dictionary so we can index rows and columns
-	for (var i = 0; i < points.length; i++) {
-		var x = points[i][0],y = points[i][1];
-		if (!coordDict[x])    coordDict[x]    = {};
-		if (!coordDict[x][y]) coordDict[x][y] = [];
-		coordDict[x][y] = i;
-	}
-	var pointsRemaining = points.length;
-	while (pointsRemaining > 0){
-		var xCoords = Object.keys(coordDict);
-		// Get random starting position
-		var startX = xCoords[Math.round(Math.random() * (xCoords.length-1))];
-		var yCoords = Object.keys(coordDict[startX]);
-		if (yCoords.length < 1) {
-			delete coordDict[startX];
-			continue;
+		let randomIndex = Math.round(Math.random() * (points.length-1));
+		animCenter = points[randomIndex];
+		var parts = 50;
+		var pointsPerPart = points.length/parts;
+		var coordDict = {};
+		// Split coords into dictionary so we can index rows and columns
+		for (var i = 0; i < points.length; i++) {
+			var x = points[i][0],y = points[i][1];
+			if (!coordDict[x])    coordDict[x]    = {};
+			if (!coordDict[x][y]) coordDict[x][y] = [];
+			coordDict[x][y] = i;
 		}
-		var startY = yCoords[Math.round(Math.random() * (yCoords.length-1))];
-		var partPoints = [];
-		partPoints.push(coordDict[startX][startY]);
-		// Delete these points so they wont be used again
-		delete coordDict[startX][startY];
-		
-		// For this starting point, get random nearby points until reached necessary number of points
-		// In practice, runs out of neighbors before can reach suitable number
-		while (partPoints.length < pointsPerPart) {
-			var curX = points[partPoints[partPoints.length-1]][0];
-			var curY = points[partPoints[partPoints.length-1]][1];
-			var neighbors = [];
-			// Get all 8 adjacent points
-			for (var diffX = -1; diffX <= 1; diffX++) {
-				for (var diffY = -1; diffY <= 1; diffY++) {
-					if (diffX == 0 && diffY == 0) continue;
-					var newX = curX + diffX;
-					var newY = curY + diffY;
-					if (coordDict[newX] && coordDict[newX][newY]) {
-						neighbors.push([newX,newY,coordDict[newX][newY]]);
-						continue;
+		var pointsRemaining = points.length;
+		while (pointsRemaining > 0){
+			var xCoords = Object.keys(coordDict);
+			// Get random starting position
+			var startX = xCoords[Math.round(Math.random() * (xCoords.length-1))];
+			var yCoords = Object.keys(coordDict[startX]);
+			if (yCoords.length < 1) {
+				delete coordDict[startX];
+				continue;
+			}
+			var startY = yCoords[Math.round(Math.random() * (yCoords.length-1))];
+			var partPoints = [];
+			partPoints.push(coordDict[startX][startY]);
+			// Delete these points so they wont be used again
+			delete coordDict[startX][startY];
+			
+			// For this starting point, get random nearby points until reached necessary number of points
+			// In practice, runs out of neighbors before can reach suitable number
+			while (partPoints.length < pointsPerPart) {
+				var curX = points[partPoints[partPoints.length-1]][0];
+				var curY = points[partPoints[partPoints.length-1]][1];
+				var neighbors = [];
+				// Get all 8 adjacent points
+				for (var diffX = -1; diffX <= 1; diffX++) {
+					for (var diffY = -1; diffY <= 1; diffY++) {
+						if (diffX == 0 && diffY == 0) continue;
+						var newX = curX + diffX;
+						var newY = curY + diffY;
+						if (coordDict[newX] && coordDict[newX][newY]) {
+							neighbors.push([newX,newY,coordDict[newX][newY]]);
+							continue;
+						}
 					}
 				}
+				if (neighbors.length > 0) {
+					var winningNeighbor = neighbors[Math.round(Math.random() * (neighbors.length-1))];
+					// [2] refers to the coordDict elem
+					partPoints.push(winningNeighbor[2]);
+					// [0] and [1] refer to newX and newY
+					delete coordDict[winningNeighbor[0]][winningNeighbor[1]];
+				}
+				else break;
 			}
-			if (neighbors.length > 0) {
-				var winningNeighbor = neighbors[Math.round(Math.random() * (neighbors.length-1))];
-				// [2] refers to the coordDict elem
-				partPoints.push(winningNeighbor[2]);
-				// [0] and [1] refer to newX and newY
-				delete coordDict[winningNeighbor[0]][winningNeighbor[1]];
-			}
-			else break;
+			pointsRemaining -= partPoints.length;
+			// console.log("points remaining = "+pointsRemaining);
+			partPoints = partPoints.map((a) => points[a]);
+			var part = newPart(partPoints);
+			allParts.push(part);
 		}
-		pointsRemaining -= partPoints.length;
-		partPoints = partPoints.map((a) => points[a]);
-		var part = newPart(partPoints);
-		allParts.push(part);
+		document.addEventListener("mousemove", handleMove);
+		setInterval(moveParts, 10);
+		console.log("parts got");
+	} else {
+		// If not drawn, retry after timeout
+		setTimeout(getParts, 10);
 	}
-	document.addEventListener("mousemove", handleMove);
-	setInterval(moveParts, 10);
 }
 
 // Draw the text to the screen
