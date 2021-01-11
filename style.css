@@ -5,11 +5,20 @@
   font-weight: normal;
   font-style: normal; }
 
+
 body{
 	margin: 0;
 	padding: 0;
 	background-color: black;
+	font-size: 3.8rem;
 }
+
+@media only screen and (max-width: 600px){
+	body{
+		font-size: 3rem;
+	}
+}
+
 
 
 canvas {
@@ -20,7 +29,6 @@ canvas {
     pointer-events: none;
     opacity: 1;
     overflow: hidden;
-    /* background-color: black; */
 	width: 100vw;
 	height: 100vh;
 }

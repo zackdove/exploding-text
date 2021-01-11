@@ -1,14 +1,17 @@
 var ctx;
 var canvas;
-let dpi = window.devicePixelRatio;
-var width = window.innerWidth * dpi * 1.2;
-var height = window.innerHeight * dpi * 1.2;
+// var dpi = window.devicePixelRatio;
+var dpi = 1;
+var dpiMult = 1.5;
+var width = window.innerWidth * dpi * dpiMult;
+var height = window.innerHeight * dpi * dpiMult;
 var allParts = [];
 var animCenter;
 var mouseX;
 var mouseY;
 var minDist;
-var multiplier = 2;
+var multiplier = 0.8;
+var colours;
 document.fonts.load('3.8rem "Maison Neue"');
 
 // ------ Helper Functions -------
@@ -35,7 +38,6 @@ function getInd(x,y) {
 function wrapText(context, text, x, y, maxWidth, lineHeight) {
 	var words = text.split(' ');
 	var line = '';
-	
 	for(var n = 0; n < words.length; n++) {
 		var testLine = line + words[n] + ' ';
 		var metrics = context.measureText(testLine);
@@ -82,7 +84,7 @@ function checkDrawn(){
 // Draw black text instead of white
 function drawInverseText(){
 	ctx.fillStyle = "black";
-	ctx.font="140px Maison Neue";
+	ctx.font= getFontSize()+"px Maison Neue";
 	ctx.textAlign = "center";
 	var text = "Digital projects that cut through the noise";
 	var x = (width + 15) / 2;
@@ -103,10 +105,10 @@ function setCanvasDims() {
 	//the + prefix casts it to an integer
 	//the slice method gets rid of "px"
 	// height = style_height * dpi * 1.2;
-	height  = window.innerHeight * dpi * 1.2;
+	height  = window.innerHeight * dpi * dpiMult;
 	//get CSS width
 	// width = style_width * dpi * 1.2;
-	width = window.innerWidth * dpi * 1.2;
+	width = window.innerWidth * dpi * dpiMult;
 	//scale the canvas
 	canvas.setAttribute('height', height);
 	canvas.setAttribute('width', width);
@@ -127,14 +129,14 @@ window.onresize = function() {
 	if (timeout) {
 		clearTimeout(timeout);
 	} 
-	timeout = setTimeout(resize, 500);
+	timeout = setTimeout(resize, 200);
 }
 
 // Get canvas coords of mouse
 // e is event from mousemouse eventlistener
 function getMouseCoords(e){
-	mouseX = e.clientX * dpi * 1.2;
-	mouseY = e.clientY * dpi * 1.2;
+	mouseX = e.clientX * dpi * dpiMult;
+	mouseY = e.clientY * dpi * dpiMult;
 }
 
 
@@ -167,15 +169,15 @@ function moveParts() {
 		// This section controls moving the parts over time, comment out for stationary
 		// Change multiplier to move more
 		var t_multiplier;
-		if (multiplier > 2.1){
-			multiplier = 1.5;
+		if (multiplier > 4.8){
+			multiplier = 0.8;
 		}
-		if (multiplier > 1.8){
-			t_multiplier = 2.1 - multiplier + 1.5;
+		if (multiplier > 2.8){
+			t_multiplier = 4.8 - multiplier + 0.8;
 		} else {
 			t_multiplier = multiplier;
 		}
-		multiplier=multiplier+0.0000001;
+		multiplier=multiplier+0.0000002;
 		var curDist = getDist(curPart.center[0],curPart.center[1],mouseX,mouseY) * curPart.m * (1/t_multiplier);
 		// If within minDist, move them away
 		if (curDist <= minDist) {
@@ -185,21 +187,22 @@ function moveParts() {
 			// Draw new location in white
 			for (var j = 0; j < curPart.points.length; j++) {
 				var curPoint = curPart.points[j];
-				var newX = curPoint[0] + xDelta;
-				var newY = curPoint[1] + yDelta;
+				var newX = curPoint[0][0] + xDelta;
+				var newY = curPoint[0][1] + yDelta;
 				
 				if (newX > 0 && newX < width && newY > 0 && newY < height) {
 					var ind = getInd(newX,newY);
 					// Set colour here, RGBA order
-					imgData.data[ind]   = 255;
-					imgData.data[ind+1] = 255;
-					imgData.data[ind+2] = 255;
-					imgData.data[ind+3] = 255;
+					var colour = colours[curPoint[1]];
+					imgData.data[ind]   = colour[0];
+					imgData.data[ind+1] = colour[1];
+					imgData.data[ind+2] = colour[2];
+					imgData.data[ind+3] = colour[3];
 				}
 				// Draw the old location in black
 				var drawOldLocation = false;
 				if (drawOldLocation){
-					var ind = getInd(curPoint[0], curPoint[1]);
+					var ind = getInd(curPoint[0][0], curPoint[0][1]);
 					imgData.data[ind]   = 0;
 					imgData.data[ind+1] = 0;
 					imgData.data[ind+2] = 0;
@@ -212,12 +215,13 @@ function moveParts() {
 		else {
 			for (var j = 0; j < curPart.points.length; j++) {
 				var curPoint = curPart.points[j];
-				var ind = getInd(curPoint[0],curPoint[1]);
+				var ind = getInd(curPoint[0][0],curPoint[0][1]);
 				// Set colour here, RGBA order
-				imgData.data[ind]   = 255;
-				imgData.data[ind+1] = 255;
-				imgData.data[ind+2] = 255;
-				imgData.data[ind+3] = 255;
+				var colour = colours[curPoint[1]];
+				imgData.data[ind]   = colour[0];
+				imgData.data[ind+1] = colour[1];
+				imgData.data[ind+2] = colour[2];
+				imgData.data[ind+3] = colour[3];
 			}
 			if (!allParts[i].updated) {
 				var ddiv = 3.5;
@@ -255,8 +259,8 @@ function initCanvas() {
 function newPart(points) {
 	var center = [0,0,];
 	for (var i = 0; i < points.length; i++) {
-		center[0] += points[i][0];
-		center[1] += points[i][1];
+		center[0] += points[i][0][0];
+		center[1] += points[i][0][1];
 	}
 	center[0] = Math.round(center[0]/points.length);
 	center[1] = Math.round(center[1]/points.length);
@@ -276,28 +280,38 @@ function newPart(points) {
 	};
 }
 
+function getColourIndex(colour){
+    if (colours.indexOf(colour) < 0) {
+		colours.push(colour);
+	}
+    return colours.indexOf(colour);
+}
+
 // Split image into small, random parts
 function getParts(){
 	console.log("getting parts");
 	if (checkDrawn()){
 		allParts = [];
+		colours = [];
 		var imageData = ctx.getImageData(0,0,width,height);
 		var points = [];
 		// Convert raw data into points
 		console.log("data length " + imageData.data.length/4);
 		for (var i = 0; i < imageData.data.length; i+=4) {
 			if (imageData.data[i+3] > 0) {
-				points.push(getCoord(i));
+				var colour = imageData.data[i] + "," + imageData.data[i+1] + "," + imageData.data[i+2] + "," + imageData.data[i+3];
+				points.push([getCoord(i), getColourIndex(colour)]);
 			}
 		}
 		let randomIndex = Math.round(Math.random() * (points.length-1));
 		animCenter = points[randomIndex];
-		var parts = 50;
+		var parts = 100;
 		var pointsPerPart = points.length/parts;
 		var coordDict = {};
 		// Split coords into dictionary so we can index rows and columns
 		for (var i = 0; i < points.length; i++) {
-			var x = points[i][0],y = points[i][1];
+			var x = points[i][0][0];
+			var y = points[i][0][1];
 			if (!coordDict[x])    coordDict[x]    = {};
 			if (!coordDict[x][y]) coordDict[x][y] = [];
 			coordDict[x][y] = i;
@@ -321,8 +335,8 @@ function getParts(){
 			// For this starting point, get random nearby points until reached necessary number of points
 			// In practice, runs out of neighbors before can reach suitable number
 			while (partPoints.length < pointsPerPart) {
-				var curX = points[partPoints[partPoints.length-1]][0];
-				var curY = points[partPoints[partPoints.length-1]][1];
+				var curX = points[partPoints[partPoints.length-1]][0][0];
+				var curY = points[partPoints[partPoints.length-1]][0][1];
 				var neighbors = [];
 				// Get all 8 adjacent points
 				for (var diffX = -1; diffX <= 1; diffX++) {
@@ -358,18 +372,37 @@ function getParts(){
 		// If not drawn, retry after timeout
 		setTimeout(getParts, 10);
 	}
+	for (var i = 0; i < colours.length; i++) {
+            colours[i] = colours[i].split(',').map(function(item) {
+                return parseInt(item, 10);
+            });
+        }
+}
+
+function getFontSize(){
+	const body = document.body;
+	if (body.currentStyle){
+		return body.currentStyle["fontSize"];
+	} else if (document.defaultView && document.defaultView.getComputedStyle){ // Gecko & WebKit
+		return document.defaultView.getComputedStyle(body, '')["fontSize"];
+	}
+	else {// try and get inline style
+		return el.style[cssprop]; // XXX I have no idea who is using that
+	}
 }
 
 // Draw the text to the screen
 function initText() {
 	ctx.clearRect(0,0,width,height);
 	ctx.fillStyle = "white";
-	ctx.font="140px Maison Neue";
+	var fontSize = getFontSize().slice(0,-2) * dpi * dpiMult;
+	console.log(getFontSize().slice(0,-2));
+	ctx.font= fontSize + "px Maison Neue";
 	ctx.textAlign = "center";
 	var text = "Digital projects that cut through the noise";
 	var x = (width + 15) / 2;
 	var y = (height - 24) / 2;	
-	wrapText(ctx, text, x, y, width*0.5, 140);
+	wrapText(ctx, text, x, y, width*0.5, fontSize);
 	// ctx.fillText("Digital projects that cut through the noise",width/2, height/2);
 }
 
