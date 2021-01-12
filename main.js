@@ -1,6 +1,5 @@
 var ctx;
 var canvas;
-// var dpi = window.devicePixelRatio;
 var dpi = 1;
 var dpiMult = 1.5;
 var width = window.innerWidth * dpi * dpiMult;
@@ -29,6 +28,27 @@ function getCoord(i) {
 	return [x,y];
 }
 
+// Get font size, allows for different browser methods
+function getFontSize(){
+	const body = document.body;
+	if (body.currentStyle){
+		return body.currentStyle["fontSize"];
+	} else if (document.defaultView && document.defaultView.getComputedStyle){ // Gecko & WebKit
+		return document.defaultView.getComputedStyle(body, '')["fontSize"];
+	}
+	else {// try and get inline style
+		return el.style[cssprop];
+	}
+}
+
+// Get index of colour
+function getColourIndex(colour){
+    if (colours.indexOf(colour) < 0) {
+		colours.push(colour);
+	}
+    return colours.indexOf(colour);
+}
+
 // Get index from coordinate
 function getInd(x,y) {
 	return (((y*canvas.width)+x)*4);
@@ -52,7 +72,6 @@ function wrapText(context, text, x, y, maxWidth, lineHeight) {
 		}
 	}
 	context.fillText(line, x, y);
-	console.log("text drawn");
 }
 
 // Takes the raw image data, decrease alpha channel
@@ -77,7 +96,6 @@ function checkDrawn(){
 			return true; 
 		}
 	}
-	console.log("not drawn yet");
 	return false;
 }
 
@@ -117,7 +135,6 @@ function setCanvasDims() {
 
 // Resize
 function resize(){
-	console.log("resizing");
 	initCanvas();
 	initText();
 	getParts();
@@ -139,13 +156,13 @@ function getMouseCoords(e){
 	mouseY = e.clientY * dpi * dpiMult;
 }
 
-
-
 // Returns true if device has pointer/mouse (i.e. no touch)
 function hasPointer(){
 	var query = window.matchMedia("(hover: hover) and (pointer: fine)");
 	return query.matches;
 }
+
+
 
 // ------- Animation -------
 
@@ -189,7 +206,6 @@ function moveParts() {
 				var curPoint = curPart.points[j];
 				var newX = curPoint[0][0] + xDelta;
 				var newY = curPoint[0][1] + yDelta;
-				
 				if (newX > 0 && newX < width && newY > 0 && newY < height) {
 					var ind = getInd(newX,newY);
 					// Set colour here, RGBA order
@@ -244,6 +260,7 @@ function moveParts() {
 }
 
 
+
 // Initialisation
 
 // Initialise the canvas, note canv.width != canv.style.width
@@ -252,7 +269,6 @@ function initCanvas() {
 	ctx  = canvas.getContext("2d");
 	allParts = [];
 	setCanvasDims();
-	console.log("canvas init done");
 }
 
 // Convert points to part which is made of points, center, a random offset in x and y, plus random speed m
@@ -280,23 +296,14 @@ function newPart(points) {
 	};
 }
 
-function getColourIndex(colour){
-    if (colours.indexOf(colour) < 0) {
-		colours.push(colour);
-	}
-    return colours.indexOf(colour);
-}
-
 // Split image into small, random parts
 function getParts(){
-	console.log("getting parts");
 	if (checkDrawn()){
 		allParts = [];
 		colours = [];
 		var imageData = ctx.getImageData(0,0,width,height);
 		var points = [];
 		// Convert raw data into points
-		console.log("data length " + imageData.data.length/4);
 		for (var i = 0; i < imageData.data.length; i+=4) {
 			if (imageData.data[i+3] > 0) {
 				var colour = imageData.data[i] + "," + imageData.data[i+1] + "," + imageData.data[i+2] + "," + imageData.data[i+3];
@@ -331,7 +338,6 @@ function getParts(){
 			partPoints.push(coordDict[startX][startY]);
 			// Delete these points so they wont be used again
 			delete coordDict[startX][startY];
-			
 			// For this starting point, get random nearby points until reached necessary number of points
 			// In practice, runs out of neighbors before can reach suitable number
 			while (partPoints.length < pointsPerPart) {
@@ -360,14 +366,12 @@ function getParts(){
 				else break;
 			}
 			pointsRemaining -= partPoints.length;
-			// console.log("points remaining = "+pointsRemaining);
 			partPoints = partPoints.map((a) => points[a]);
 			var part = newPart(partPoints);
 			allParts.push(part);
 		}
 		document.addEventListener("mousemove", handleMove);
 		setInterval(moveParts, 10);
-		console.log("parts got");
 	} else {
 		// If not drawn, retry after timeout
 		setTimeout(getParts, 10);
@@ -379,31 +383,19 @@ function getParts(){
         }
 }
 
-function getFontSize(){
-	const body = document.body;
-	if (body.currentStyle){
-		return body.currentStyle["fontSize"];
-	} else if (document.defaultView && document.defaultView.getComputedStyle){ // Gecko & WebKit
-		return document.defaultView.getComputedStyle(body, '')["fontSize"];
-	}
-	else {// try and get inline style
-		return el.style[cssprop]; // XXX I have no idea who is using that
-	}
-}
+
 
 // Draw the text to the screen
 function initText() {
 	ctx.clearRect(0,0,width,height);
 	ctx.fillStyle = "white";
 	var fontSize = getFontSize().slice(0,-2) * dpi * dpiMult;
-	console.log(getFontSize().slice(0,-2));
 	ctx.font= fontSize + "px Maison Neue";
 	ctx.textAlign = "center";
 	var text = "Digital projects that cut through the noise";
 	var x = (width + 15) / 2;
 	var y = (height - 24) / 2;	
 	wrapText(ctx, text, x, y, width*0.5, fontSize);
-	// ctx.fillText("Digital projects that cut through the noise",width/2, height/2);
 }
 
 function init() {
@@ -420,7 +412,3 @@ function init() {
 }
 
 window.onload = init;
-
-
-
-

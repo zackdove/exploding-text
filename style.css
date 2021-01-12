@@ -1,4 +1,3 @@
-
 @font-face {
   font-family: 'Maison Neue';
   src: url("./fonts/hinted-MaisonNeue-Book.woff2") format("woff2");
@@ -18,8 +17,6 @@ body{
 		font-size: 3rem;
 	}
 }
-
-
 
 canvas {
     position: fixed;
